@@ -39,6 +39,12 @@ Load books from notion and export to markdown file so it can be used on my hugo 
 # Twitter
 From https://github.com/jarulsamy/twitter-bookmark-downloader.
 
+TODO
+
+- [ ] option to download videos
+- [ ] add column to save the link (i.e. blog post, youtube)
+- [ ] what to do with gifs? save link to column?
+
 ### Setup
 
 This software is only compatible with **Python 3.6+**.
