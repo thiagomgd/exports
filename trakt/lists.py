@@ -45,18 +45,21 @@ def get_imdb_img(id):
 LIST = 'finished'
 STATUS = 'Finished'
 
-USERNAME = ''
 TRAKT_DOMAIN = 'https://trakt.tv/'
 TRAKT_LINK = 'https://trakt.tv/{media_type}/{slug}'
 IMDB = 'https://www.imdb.com/title/'
 IMDB_DOMAIN = 'https://www.imdb.com'
 
 trakt.core.AUTH_METHOD = trakt.core.OAUTH_AUTH 
-trakt.core.CLIENT_ID = ''
-trakt.core.CLIENT_SECRET = ''
-trakt.core.OAUTH_TOKEN = ''
 
-me = User(USERNAME)
+with open('config.json', 'r') as config_file:
+    config = json.load(config_file)
+    trakt.core.CLIENT_ID = config["CLIENT_ID"]
+    trakt.core.CLIENT_SECRET = config["OAUTH_TOKEN"]
+    trakt.core.OAUTH_TOKEN = config["OAUTH_TOKEN"]
+    username = config["USERNAME"]
+
+me = User(username)
 
 things = []
 

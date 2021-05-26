@@ -18,10 +18,7 @@ IMDB_DOMAIN = 'https://www.imdb.com'
 TWITTER = 'https://twitter.com/'
 INSTAGRAM = 'https://www.instagram.com/'
 
-trakt.core.AUTH_METHOD = trakt.core.OAUTH_AUTH 
-trakt.core.CLIENT_ID = ''
-trakt.core.CLIENT_SECRET = ''
-trakt.core.OAUTH_TOKEN = ''
+
 
 # def headshot_img(tag):
 #     return tag.name == 'img' and tag.class_ == "profile lazyload lazyloaded"
@@ -69,7 +66,17 @@ def get_trakt_headshot_imgur(id):
 
     return ''
 
-me = User('')
+
+with open('config.json', 'r') as config_file:
+    config = json.load(config_file)
+    trakt.core.CLIENT_ID = config["CLIENT_ID"]
+    trakt.core.CLIENT_SECRET = config["OAUTH_TOKEN"]
+    trakt.core.OAUTH_TOKEN = config["OAUTH_TOKEN"]
+    username = config["USERNAME"]
+    
+trakt.core.AUTH_METHOD = trakt.core.OAUTH_AUTH 
+
+me = User(username)
 
 people = []
 

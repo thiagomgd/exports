@@ -30,6 +30,8 @@ Todo:
 
 # Notion
 
+NOTE: consider using https://github.com/ramnes/notion-sdk-py in the future
+
 Not commited yet:
 
 ## notion_to_blog

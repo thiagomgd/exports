@@ -12,14 +12,17 @@ import os
 
 # LIST = 'watched_shows'
 LIST = 'watchlistprev'
-USERNAME = ''
 
 trakt.core.AUTH_METHOD = trakt.core.OAUTH_AUTH 
-trakt.core.CLIENT_ID = ''
-trakt.core.CLIENT_SECRET = ''
-trakt.core.OAUTH_TOKEN = ''
 
-me = User(USERNAME)
+with open('config.json', 'r') as config_file:
+    config = json.load(config_file)
+    trakt.core.CLIENT_ID = config["CLIENT_ID"]
+    trakt.core.CLIENT_SECRET = config["OAUTH_TOKEN"]
+    trakt.core.OAUTH_TOKEN = config["OAUTH_TOKEN"]
+    username = config["USERNAME"]
+
+me = User(username)
 
 
 # for watched_shows and watched_movies
