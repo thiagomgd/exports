@@ -1,3 +1,9 @@
 *.json
 *.csv
 KEYS.txt
+*.html
+*.log
+.DS_Store
+twitter/download/*
+twitter/__pycache__
+twitter/.DS_Store
