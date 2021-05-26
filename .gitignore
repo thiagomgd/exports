@@ -7,3 +7,4 @@ KEYS.txt
 twitter/download/*
 twitter/__pycache__
 twitter/.DS_Store
+notion/*.md

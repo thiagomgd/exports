@@ -32,16 +32,9 @@ Todo:
 
 NOTE: consider using https://github.com/ramnes/notion-sdk-py in the future
 
-Not commited yet:
-
 ## notion_to_blog
 
 Load books from notion and export to markdown file so it can be used on my hugo blog.
-
-TODO:
-- [ ] Move configs to json so I can commit it
-- [ ] Move configs to json so I can commit it
-
 
 # Twitter
 From https://github.com/jarulsamy/twitter-bookmark-downloader.
