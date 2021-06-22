@@ -5,7 +5,6 @@ Generate csv files from my trakt lists, to import to Notion
 Export a list with people
 
 TODO
-- [ ] Move configs to json so I can commit it
 - [ ] Option to update/insert directly to notion
 
 ## lists
