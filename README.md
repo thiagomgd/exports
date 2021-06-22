@@ -24,7 +24,6 @@ Export saved posts to json. Has commented code to unsave
 For a json exported from the site (csv converted to json), add cover URLs and save to csv so it can be imported into notion.
 
 Todo:
-- [ ] Move configs to json so I can commit it
 - [ ] Option to update/insert directly to notion
 
 # Notion
