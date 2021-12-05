@@ -70,12 +70,13 @@ def get_trakt_headshot_imgur(id):
 with open('config.json', 'r') as config_file:
     config = json.load(config_file)
     trakt.core.CLIENT_ID = config["CLIENT_ID"]
-    trakt.core.CLIENT_SECRET = config["OAUTH_TOKEN"]
+    trakt.core.CLIENT_SECRET = config["CLIENT_SECRET"]
     trakt.core.OAUTH_TOKEN = config["OAUTH_TOKEN"]
     username = config["USERNAME"]
-    
-trakt.core.AUTH_METHOD = trakt.core.OAUTH_AUTH 
 
+trakt.core.AUTH_METHOD = trakt.core.OAUTH_AUTH 
+# print(init(username, client_id=config["CLIENT_ID"], client_secret=config["CLIENT_SECRET"]))
+# print('a', trakt.core.OAUTH_TOKEN)
 me = User(username)
 
 people = []
@@ -100,12 +101,16 @@ for actor in actresses_list._items:
 
     people.append(person)
 
-csv_columns = ['Name','Birthday','Country','Profession','Link','Instagram','Twitter', 'Photo', "Trakt Id"]
 
-time_stamp =  datetime.datetime.now().strftime("%b-%d-%y-%H:%M:%S")
+with open('actresses.json', "w") as f:
+        json.dump(people, f, indent=4)
 
-with open('export/actresses_{}.csv'.format(time_stamp), mode='w') as csvfile:
-    writer = csv.DictWriter(csvfile, fieldnames=csv_columns)
-    writer.writeheader()
-    for data in people:
-        writer.writerow(data)
+
+# csv_columns = ['Name','Birthday','Country','Profession','Link','Instagram','Twitter', 'Photo', "Trakt Id"]
+# time_stamp =  datetime.datetime.now().strftime("%b-%d-%y-%H:%M:%S")
+
+# with open('export/actresses_{}.csv'.format(time_stamp), mode='w') as csvfile:
+#     writer = csv.DictWriter(csvfile, fieldnames=csv_columns)
+#     writer.writeheader()
+#     for data in people:
+#         writer.writerow(data)

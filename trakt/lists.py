@@ -11,120 +11,141 @@ from bs4 import BeautifulSoup
 import os
 import datetime
 
-def get_imdb_img(id):
-    url = IMDB + str(id)
+TRAKT_SHOWS = "https://trakt.tv/shows/{}"
+TRAKT_MOIES = "https://trakt.tv/movies/{}"
+
+# def get_imdb_img(id):
+#     url = IMDB + str(id)
+#     page_data = requests.get(url)
+#     page = BeautifulSoup(page_data.content, 'html.parser')
+
+#     result = page.select_one('div.poster a')
+
+#     if (result and result['href']):
+#         gallery_data = requests.get(IMDB_DOMAIN + result['href'])
+#         gallery_page = BeautifulSoup(gallery_data.content, 'html.parser')
+
+#         img_id = result['href'].split('/')[-1].split('?')[0] + '-curr'
+        
+#         img = gallery_page.find(attrs={'data-image-id':img_id})
+#         return img['src'].replace('"', '') if img else ''
+
+#     result = page.select_one('div.poster a img')
+#     return result['src'].replace('"', '') if result else ''
+
+def get_trakt_banner(item):
+    if (isinstance(item, TVShow)):
+        url = TRAKT_SHOWS.format(item.trakt)
+    else:
+        url = TRAKT_MOIES.format(item.trakt)
+
     page_data = requests.get(url)
     page = BeautifulSoup(page_data.content, 'html.parser')
 
-    result = page.select_one('div.poster a')
+    result = page.select_one('#summary-wrapper')
 
-    if (result and result['href']):
-        gallery_data = requests.get(IMDB_DOMAIN + result['href'])
-        gallery_page = BeautifulSoup(gallery_data.content, 'html.parser')
+    if (result and result['data-fanart']):
+        return result['data-fanart']
 
-        img_id = result['href'].split('/')[-1].split('?')[0] + '-curr'
-        
-        img = gallery_page.find(attrs={'data-image-id':img_id})
-        return img['src'].replace('"', '') if img else ''
+    return ''
 
-    result = page.select_one('div.poster a img')
-    return result['src'].replace('"', '') if result else ''
+def get_network(item):
+    if (isinstance(item, TVShow) and item.network == 'Netflix') or (item.homepage and 'netflix' in item.homepage):
+        return 'Netflix'
+    elif (isinstance(item, TVShow) and item.network == 'Amazon') or (item.homepage and ('primevideo' in item.homepage or 'amazon' in item.homepage)):
+        return 'Amazon'
+    elif (isinstance(item, TVShow) and item.network == 'Apple TV+') or (item.homepage and 'tv.apple.com' in item.homepage):
+        return 'Apple TV+'
+    elif (isinstance(item, TVShow) and item.network == 'Disney+') or (item.homepage and 'disneyplus' in item.homepage):
+        return 'Disney+'
+    return ''
 
-
-
-# LIST = 'watched_shows'
-# LIST = 'on-hold'
-# STATUS = 'Paused'
-
-# LIST = 'watching-now'
-# STATUS = 'Watching'
-
-# LIST = 'abandoned'
-# STATUS = 'Abandoned'
-
-LIST = 'finished'
-STATUS = 'Finished'
+LIST_TO_STATUS = {
+    'secondary-watchlist': 'Maybe',
+    'watching-now': 'Watching',
+    'abandoned': 'Abandoned',
+    'on-hold': 'Paused',
+    'finished': 'Watched',
+    'actual-watchlist': 'Not started'
+}
 
 TRAKT_DOMAIN = 'https://trakt.tv/'
 TRAKT_LINK = 'https://trakt.tv/{media_type}/{slug}'
 IMDB = 'https://www.imdb.com/title/'
 IMDB_DOMAIN = 'https://www.imdb.com'
 
-trakt.core.AUTH_METHOD = trakt.core.OAUTH_AUTH 
+def get_all_trakt():
+    trakt.core.AUTH_METHOD = trakt.core.OAUTH_AUTH 
 
-with open('config.json', 'r') as config_file:
-    config = json.load(config_file)
-    trakt.core.CLIENT_ID = config["CLIENT_ID"]
-    trakt.core.CLIENT_SECRET = config["OAUTH_TOKEN"]
-    trakt.core.OAUTH_TOKEN = config["OAUTH_TOKEN"]
-    username = config["USERNAME"]
+    with open('config.json', 'r') as config_file:
+        config = json.load(config_file)
+        trakt.core.CLIENT_ID = config["CLIENT_ID"]
+        trakt.core.CLIENT_SECRET = config["CLIENT_SECRET"]
+        trakt.core.OAUTH_TOKEN = config["OAUTH_TOKEN"]
+        trakt.core.AUTH_METHOD = trakt.core.OAUTH_AUTH
+        username = config["USERNAME"]
 
-me = User(username)
+    me = User(username)
 
-things = []
+    things = []
 
-list = me.get_list(LIST) 
-for item in list._items:
+    for l in LIST_TO_STATUS.keys():
+        print('-'*5, l.ljust(12), '-'*5)
+        list = me.get_list(l) 
+        for item in list._items:
 
-# for watched_shows and watched_movies
-# some attributes are not present (bug on PyTrakt?), so have to comment them below
-# list = me.watched_shows
-# for item in list:
+        # for watched_shows and watched_movies
+        # some attributes are not present (bug on PyTrakt?), so have to comment them below
+        # list = me.watched_shows
+        # for item in list:
 
-    pprint.pprint(item)
-    thing = {}
+            # pprint.pprint(item)
+            thing = {}
 
-    if isinstance(item, Movie):
-        thing['Type'] = 'Movie'
-        thing['Premiered'] = item.released
+            if isinstance(item, Movie):
+                thing['Type'] = 'Movie'
+                thing['Premiered'] = item.released
 
-    elif isinstance(item, TVShow):
-        thing['Type'] = 'TV'
-        thing['Premiered'] = item.first_aired.strftime('%Y-%m-%d')
-        thing['Show Status'] = item.status
+            elif isinstance(item, TVShow):
+                thing['Type'] = 'TV'
+                thing['Premiered'] = item.first_aired.strftime('%Y-%m-%d') if item.first_aired else None
+                thing['Show Status'] = item.status
 
-    else:
-        print('SKIPPED:', item.title)
-        continue
+            else:
+                print('SKIPPED:', item.title)
+                continue
 
-    thing['Trakt Id'] = item.trakt
+            thing['Trakt Id'] = item.trakt
 
-    thing['Name'] = item.title
-    thing['Status'] = STATUS
-    thing['Country'] =  item.country
-    thing['Language'] = item.language
-    
-    genres = getattr(item, 'genres', [])
-    if genres:
-        thing['Tags'] = ','.join(genres)
+            thing['Name'] = item.title
+            thing['Status'] = LIST_TO_STATUS[l]
+            thing['Country'] =  item.country
+            thing['Language'] = item.language
+            
+            genres = getattr(item, 'genres', [])
+            if genres:
+                thing['Genres'] = ','.join(genres)
+                
+            thing['Summary'] = item.overview
+            thing['Runtime'] = item.runtime
+            thing['Certification'] = item.certification
+            thing['Link'] = TRAKT_LINK.format(**item.__dict__)
+            thing['Homepage'] = item.homepage
+            thing['Year'] = item.year
+            
+            thing['Where'] = get_network(item)
+            
+
+            # thing['Cover'] = get_trakt_banner(item)
+            # print(thing['Cover'])
+            
+            things.append(thing)
+
+    return things
+
+# with open('lists.json', "w") as f:
+#         json.dump(things, f, indent=4)
         
-    thing['Summary'] = item.overview
-    thing['Runtime'] = item.runtime
-    thing['Certification'] = item.certification
-    thing['Link'] = TRAKT_LINK.format(**item.__dict__)
-    thing['Homepage'] = item.homepage
-    thing['Year'] = item.year
-    
-    if (isinstance(item, TVShow) and item.network == 'Netflix') or (item.homepage and 'netflix' in item.homepage):
-        thing['Where'] = 'Netflix'
-    elif (isinstance(item, TVShow) and item.network == 'Amazon') or (item.homepage and ('primevideo' in item.homepage or 'amazon' in item.homepage)):
-        thing['Where'] = 'Amazon'
-    else:
-        thing['Where'] = ''
-
-    thing['Cover'] = get_imdb_img(item.imdb)
-    
-    things.append(thing)
-
-csv_columns = ['Name', 'Type', 'Country', 'Language', 'Status', 'Runtime', 'Link', 'Homepage', 'Cover', 'Show Status', 'Tags', 'Premiered', 'Year', 'Certification', 'Where', 'Summary', "Trakt Id"]
-
-time_stamp =  datetime.datetime.now().strftime("%b-%d-%y--%H-%M-%S")
-
-with open('export/{}_{}.csv'.format(LIST, time_stamp), mode='w') as csvfile:
-    writer = csv.DictWriter(csvfile, fieldnames=csv_columns)
-    writer.writeheader()
-    for data in things:
-        writer.writerow(data)
 
 
 # used for watched_shows and watched_movies. 
