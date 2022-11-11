@@ -77,6 +77,7 @@ def insert_notion(type, notion_data):
 
     name = notion_data.get('Title') or notion_data.get('Name') or 'Not Found'
     print('insert', name, response.status_code)
+
     if response.status_code == 400:
         print(response.text)
         pprint(notion_data)
@@ -86,6 +87,7 @@ def insert_notion(type, notion_data):
 
 def update_notion(notion_id, notion_data):
     notion_format = dict_to_notion(notion_data)
+
     # pprint(notion_data)
     # pprint(notion_format)
     # input('------------------------')
@@ -148,6 +150,13 @@ def _to_select(value):
         "select": {'name': value}
     }
 
+def _to_status(value):
+    if value == '':
+        return None
+
+    return {
+        "status": {'name': value}
+    }
 
 def _to_title(value):
     if value == '':
@@ -272,11 +281,23 @@ def _files(prop):
     if len(files) == 0:
         return None
 
-    return files[0]["external"]['url']
+    file = files[0]
+    if 'external' in file:
+        return file["external"]['url']
+    
+    return file['file']['url']
 
 
 def _select(prop):
     val = prop['select']
+    if val == None:
+        return None 
+
+    return val["name"]
+
+def _status(prop):
+    val = prop['status']
+    
     if val == None:
         return None 
 
@@ -292,24 +313,35 @@ def _relation(prop):
 def _created_time(prop):
     return prop["created_time"]
 
+def _last_edited_time(prop):
+    return prop["last_edited_time"]
+
+def _formula(prop):
+    # TODO: implement
+    return None
+
 def _get_data(props, name):
     prop = props.get(name, None)
 
     if prop == None:
         return None
 
+    # print(name, prop["type"])
     return {
         "number": _number,
         "date": _date,
         "files": _files,
         "select": _select,
+        "status": _status,
         "title": _title,
         "rich_text": _rich_text,
         'multi_select': _multi_select,
         'url': _url,
         'checkbox': _checkbox,
         'relation': _relation,
-        'created_time': _created_time
+        'created_time': _created_time,
+        'formula': _formula,
+        'last_edited_time': _last_edited_time
     }.get(prop["type"])(prop)
 
 def _map_to_notion(key, value):
@@ -333,7 +365,7 @@ def _map_to_notion(key, value):
         "Date Read": _to_date,
         "Date Added": _to_date,
         "Bookshelves": _to_multi,
-        "Status": _to_select,
+        "Status": _to_status,
         "Cover": _to_file_link,
         "Book Id": _to_number,
         "Number In Series": _to_number,

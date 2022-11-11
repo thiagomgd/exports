@@ -64,7 +64,8 @@ LIST_TO_STATUS = {
     'secondary-watchlist': 'Maybe',
     'watching-now': 'Watching',
     'abandoned': 'Abandoned',
-    'on-hold': 'Paused',
+    'paused': 'Paused',
+    'on-hold': 'On Hold',
     'finished': 'Watched',
     'actual-watchlist': 'Not started'
 }
@@ -86,11 +87,12 @@ def get_all_trakt():
         username = config["USERNAME"]
 
     me = User(username)
+    # print(me.lists)
 
     things = []
 
     for l in LIST_TO_STATUS.keys():
-        print('-'*5, l.ljust(12), '-'*5)
+        # print('-'*5, l.ljust(12), '-'*5)
         list = me.get_list(l) 
         for item in list._items:
 
@@ -119,6 +121,7 @@ def get_all_trakt():
 
             thing['Name'] = item.title
             thing['Status'] = LIST_TO_STATUS[l]
+            # pprint.pprint(item)
             thing['Country'] =  item.country
             thing['Language'] = item.language
             
@@ -129,7 +132,9 @@ def get_all_trakt():
             thing['Summary'] = item.overview
             thing['Runtime'] = item.runtime
             thing['Certification'] = item.certification
-            thing['Link'] = TRAKT_LINK.format(**item.__dict__)
+            # pprint.pprint(vars(item))
+            # pprint.pprint(item.ext)
+            thing['Link'] = TRAKT_DOMAIN + item.ext #TRAKT_LINK.format(**item.__dict__)
             thing['Homepage'] = item.homepage
             thing['Year'] = item.year
             

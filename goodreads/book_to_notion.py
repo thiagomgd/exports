@@ -6,6 +6,7 @@ from datetime import datetime
 from time import sleep
 from bs4 import BeautifulSoup
 from urllib.request import urlopen
+import csv 
 
 import notion
 
@@ -24,7 +25,7 @@ def get_series(title):
     # House of Secrets: Clash of the Worlds (House of Secrets Series)
 
 
-    print(title)
+    # print(title)
     match = re.search('\(([^)]+)', title) #.group(1)
     
     if match != None: # has something inside ()
@@ -61,22 +62,23 @@ def convert_book(book):
     return {
         "Title": book['Title'],
         "Author": book['Author'],
-        "Additional Authors": book['Additional Authors'],
+        # TODO: fix?
+        # "Additional Authors": book['Additional Authors'],
         "ISBN": book['ISBN'],
         "ISBN13": book['ISBN13'],
-        "My Rating": book['My Rating'],
-        "Average Rating": book['Average Rating'],
-        "Publisher": book['Publisher'],
+        "My Rating": float(book['My Rating']) if book['My Rating'].isnumeric() else None,
+        "Average Rating": float(book['Average Rating']) if book['Average Rating'].isnumeric() else None,
+        "Publisher": book['Publisher'].replace(',',';'),
         "Binding": book['Binding'],
-        "Number of Pages": book['Number of Pages'],
-        "Year Published": book['Year Published'],
-        "Original Publication Year": book['Original Publication Year'],
+        "Number of Pages": int(book['Number of Pages']) if book['Number of Pages'].isnumeric() else None,
+        "Year Published": int(book['Year Published']) if book['Year Published'].isnumeric() else None,
+        "Original Publication Year": int(book['Original Publication Year']) if book['Original Publication Year'].isnumeric() else None,
         "Date Read": gr_date(book['Date Read']),
         "Date Added": gr_date(book['Date Added']),
         "Bookshelves": book['Bookshelves'],
         "Status": book['Exclusive Shelf'],
         "Cover": None,
-        "Book Id": book['Book Id'],
+        "Book Id": int(book['Book Id']),
         "Link": "https://www.goodreads.com/book/show/{}".format(book['Book Id'])
     }
 
@@ -130,13 +132,27 @@ books_notion_ = notion.get_notion_data(TYPE)
 
 books_gr = {}
 
-with open('goodreads.json') as f:
-    books_gr_json = json.load(f)
-    for book_ in books_gr_json:
-        book = convert_book(book_)
+# with open('goodreads.json') as f:
+#     books_gr_json = json.load(f)
+#     for book_ in books_gr_json:
+#         book = convert_book(book_)
+#         if book["Status"] != 'to-read':
+#             books_gr[book['Book Id']] = book
+with open('goodreads_library_export.csv', mode='r') as csv_file:
+    csv_reader = csv.DictReader(csv_file)
+    line_count = 0
+    for row in csv_reader:
+        if line_count == 0:
+            print(f'Column names are {", ".join(row)}')
+            line_count += 1
+        # print(f'\t{row["name"]} works in the {row["department"]} department, and was born in {row["birthday month"]}.')
+        line_count += 1
+        book = convert_book(row)
+        # pprint(book)
         if book["Status"] != 'to-read':
             books_gr[book['Book Id']] = book
 
+    print(f'Processed {line_count} lines.')
 
 books_notion = {x['properties']['Book Id']['number']: x for x in books_notion_}
 

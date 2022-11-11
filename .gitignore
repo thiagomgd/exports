@@ -5,6 +5,6 @@ KEYS.txt
 *.log
 .DS_Store
 twitter/download/*
-twitter/__pycache__
+**/__pycache__
 twitter/.DS_Store
 notion/*.md

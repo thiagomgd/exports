@@ -13,7 +13,7 @@ from bs4 import BeautifulSoup
 from time import sleep
 import os
 import datetime
-import tn
+import notion 
 
 CAST = {
     'movies': 'https://api.trakt.tv/people/{}/movies',
@@ -62,20 +62,21 @@ with open('config.json', 'r') as config_file:
     username = config["USERNAME"]
 
 def get_actor_data():
-    n_actors_ = tn.get_actresses()
+    n_actors_ = notion.get_notion_data('ACTRESSES', None, {})
+    
     n_actors = {}
     for item in n_actors_:
-        actor = tn.get_props_data(item)
+        actor = notion.get_props_data(item)
         actor['notion_id'] = item.get('id')
         n_actors[actor['Trakt Id']] = actor
 
     return n_actors
 
 def get_list_data():
-    n_lists_ = tn.get_media()
+    n_lists_ = notion.get_notion_data('MEDIA', None, {})
     n_lists = {}
     for item in n_lists_:
-        thing = tn.get_props_data(item)
+        thing = notion.get_props_data(item)
         thing['notion_id'] = item.get('id')
         n_lists[thing['Trakt Id']] = thing
 
@@ -99,5 +100,8 @@ for actor_id in n_actors.keys():
 
     if len(item_notion_ids) > 0 and Counter(item_notion_ids) != Counter(n_actors[actor_id]['Roles']):
         to_update = {'Roles': item_notion_ids}
-        n_format = tn.dict_to_notion(to_update)
-        tn.update_notion(n_actors[actor_id]['notion_id'], n_format)
+        # pprint(item_notion_ids)
+        # pprint(n_actors[actor_id]['Roles'])
+        # print('---------')
+        # n_format = notion.dict_to_notion(to_update)
+        notion.update_notion(n_actors[actor_id]['notion_id'], to_update)

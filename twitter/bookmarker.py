@@ -46,16 +46,26 @@ class TwitterBookmarkDownloader(object):
         # Wait till page is loaded
         try:
             WebDriverWait(self.driver, 10).until(
-                EC.presence_of_element_located((By.NAME, "session[username_or_email]"))
+                EC.presence_of_element_located((By.NAME, "text"))
+                # EC.presence_of_element_located(('input[autocomplete=username]'))
             )
         # Timeout of 10 seconds
         except TimeoutException:
             return Exception("Page didn't load")
 
-        uname = self.driver.find_element_by_name("session[username_or_email]")
-        pword = self.driver.find_element_by_name("session[password]")
+        uname = self.driver.find_element_by_css_selector('input[autocomplete=username]') #self.driver.find_element_by_name("username")
         try:
             uname.send_keys(self.username)
+            nextButton = self.driver.find_element_by_xpath("//span[.='Next']")
+            nextButton.click()
+            try:
+                WebDriverWait(self.driver, 10).until(
+                    EC.presence_of_element_located((By.NAME, "password"))
+            )
+            # Timeout of 10 seconds
+            except TimeoutException:
+                return Exception("Page didn't load")
+            pword = self.driver.find_element_by_name("password")
             pword.send_keys(self.password)
         except TypeError:
             raise ValueError("Missing username/password")
@@ -107,14 +117,16 @@ class TwitterBookmarkDownloader(object):
                 print(f"Downloaded file to: {path}")
 
     def save_delete_bookmark(self, tweets_csv):
-      tweet = self.driver.find_element_by_xpath("//*[@id='react-root']/div/div/div[2]/main/div/div/div/div[1]/div/div[2]/div/section/div/div/div")
-
+    #   tweet = self.driver.find_element_by_xpath("//*[@id='react-root']/div/div/div[2]/main/div/div/div/div[1]/div/div[2]/div/section/div/div/div")
+      tweet = self.driver.find_element_by_css_selector('article[data-testid="tweet"]')
       # for tweet in tweets:
       tweet_link = tweet.find_element_by_css_selector('a[role="link"][dir="auto"]')
       tweet_url = tweet_link.get_attribute("href")
 
-      tweet_profile = tweet.find_element_by_xpath('div/div/article/div/div/div/div[2]/div[2]/div[1]/div/div[1]/div[1]/div[1]/a/div/div[2]/div/span')
-      profile = tweet_profile.text[1:]
+      # tweet_profile = tweet.find_element_by_xpath('div/div/article/div/div/div/div[2]/div[2]/div[1]/div/div[1]/div[1]/div[1]/a/div/div[2]/div/span')
+      # profile = tweet_profile.text[1:]
+      tweet_id = tweet_url.split('/')[-1]
+      profile = tweet_url.split('/')[-3]
       
       print(tweet_url, profile)
       # print(profile)
@@ -128,7 +140,7 @@ class TwitterBookmarkDownloader(object):
         if "media" in url:
             # driver.get(url)
             filename, format_ = os.path.split(url)[1].split("?")
-            fn = "{}_{}".format(profile, filename)
+            fn = "{}_{}_{}".format(profile, tweet_id, filename)
             ext = re.findall("format=\w{3}", format_)[0].split("=")[1]
             img_data = urlopen(url).read()
             path = Path(self.download_dir, f"{fn}.{ext}")
@@ -137,9 +149,10 @@ class TwitterBookmarkDownloader(object):
             print(f"Downloaded file to: {path}")
 
       # check if is video
-      video = tweet.find_elements_by_css_selector("div[aria-label='Play this video']")
+      video = tweet.find_elements_by_css_selector("div[aria-label='Embedded video']")
       has_video = "no" if len(video) == 0 else "yes"
 
+      print('appending:',tweet_url, profile, has_video)
       tweets_csv.write("{},{},{}\n".format(tweet_url, profile, has_video))
 
       # click share
@@ -160,7 +173,7 @@ class TwitterBookmarkDownloader(object):
         for itr in range(20):
           print("ITR: {}".format(itr))
 
-          for _ in range(20):
+          for _ in range(100):
             self.save_delete_bookmark(tweets_csv)
             time.sleep(2)
 

@@ -65,11 +65,11 @@ def update_record(notion_data, trakt_data):
     if len(diff) > 0:
         notion.update_notion(notion_data.get('id'), diff)
         
+act_trakt = lists.get_all_trakt()
+
 notion_data = notion.get_notion_data(TYPE)
 
 act_notion = format_notion_data(notion_data)
-
-act_trakt = lists.get_all_trakt()
 
 for trakt in act_trakt:
     if trakt['Trakt Id'] in act_notion:
