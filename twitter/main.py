@@ -41,7 +41,7 @@ downloader = TwitterBookmarkDownloader(
     username=args["username"],
     password=args["password"],
     download_dir=args["download_dir"],
-    headless=args["headless"],
+    headless=args["headless"]
 )
 
 downloader.login()
