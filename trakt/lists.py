@@ -3,7 +3,7 @@ import trakt.core
 from trakt.users import User, UserList
 from trakt.movies import Movie
 from trakt.tv import TVShow
-import pprint
+from pprint import pprint
 import csv
 import requests
 import json
@@ -76,6 +76,7 @@ IMDB = 'https://www.imdb.com/title/'
 IMDB_DOMAIN = 'https://www.imdb.com'
 
 def get_all_trakt():
+    print('version', trakt.__version__)
     trakt.core.AUTH_METHOD = trakt.core.OAUTH_AUTH 
 
     with open('config.json', 'r') as config_file:
@@ -94,6 +95,8 @@ def get_all_trakt():
     for l in LIST_TO_STATUS.keys():
         # print('-'*5, l.ljust(12), '-'*5)
         list = me.get_list(l) 
+        # print("ITEMS: ", len(list._items))
+        # pprint(list._items[0])
         for item in list._items:
 
         # for watched_shows and watched_movies
@@ -103,6 +106,11 @@ def get_all_trakt():
 
             # pprint.pprint(item)
             thing = {}
+            # print(item.slug)
+
+            # for some reason, 1899 is being loaded as this show
+            # if 'strangers-with-candy' in item.slug:
+            #     continue
 
             if isinstance(item, Movie):
                 thing['Type'] = 'Movie'
@@ -112,9 +120,12 @@ def get_all_trakt():
                 thing['Type'] = 'TV'
                 thing['Premiered'] = item.first_aired.strftime('%Y-%m-%d') if item.first_aired else None
                 thing['Show Status'] = item.status
+                # if l == 'watching-now':
+                
 
             else:
                 print('SKIPPED:', item.title)
+                # pprint(item)
                 continue
 
             thing['Trakt Id'] = item.trakt
@@ -135,6 +146,8 @@ def get_all_trakt():
             # pprint.pprint(vars(item))
             # pprint.pprint(item.ext)
             thing['Link'] = TRAKT_DOMAIN + item.ext #TRAKT_LINK.format(**item.__dict__)
+            # if 'strangers-with-candy' in thing['Link']:
+            #     thing['Link'].replace('strangers-with-candy','1899')
             thing['Homepage'] = item.homepage
             thing['Year'] = item.year
             

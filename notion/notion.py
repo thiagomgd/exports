@@ -201,7 +201,7 @@ def _to_date(value):
 
 
 def _to_number(value):
-    if value == '':
+    if value == '' or value == None:
         return None
     return {'number': value}
 
@@ -345,6 +345,8 @@ def _get_data(props, name):
     }.get(prop["type"])(prop)
 
 def _map_to_notion(key, value):
+    # print(key, value)
+
     return {
         # goodreads
         "Title": _to_title,
@@ -375,7 +377,6 @@ def _map_to_notion(key, value):
         'Type': _to_select,
         'Country': _to_select,
         'Status': _to_select,
-        'Link': _to_url,
         'Homepage': _to_url,
         'Genres': _to_multi,
         'Certification': _to_select,
@@ -397,5 +398,25 @@ def _map_to_notion(key, value):
         'Instagram': _to_url,
         'Twitter': _to_url,
         'Profession': _to_multi,
-        'Photo': _to_file_link
+        'Photo': _to_file_link,
+        # freeones
+        'Ethnicity': _to_select,
+        'Eyes': _to_select,
+        'Aliases': _to_rich_text,
+        'Height': _to_number,
+        'Weight': _to_number,
+        'Boobs': _to_select, 
+        'Bust': _to_number, 
+        'Cup': _to_select, 
+        'Bra': _to_select,
+        'Hair': _to_select,
+        'Waist': _to_number,
+        'Hip': _to_number,
+        'Butt': _to_select,
+        'Tattoos': _to_select, 
+        'Tattoo Locations': _to_rich_text,
+        'Piercings': _to_select,
+        'Piercing Locations': _to_rich_text,
+        'Started': _to_number,
+        'Until': _to_number
     }.get(key)(value)
