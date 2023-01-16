@@ -103,7 +103,7 @@ for actor in actresses_list._items:
 
 
 with open('actresses.json', "w") as f:
-        json.dump(people, f, indent=4)
+    json.dump(people, f, indent=4)
 
 
 # csv_columns = ['Name','Birthday','Country','Profession','Link','Instagram','Twitter', 'Photo', "Trakt Id"]
