@@ -19,7 +19,10 @@ SERIES_ENGLISH = {
     "ブラッククローバー [Black Clover]": "Black Clover"
 }
 
-DEBUG = False
+DEBUG = True
+
+total_info_old = 0
+total_info_new = 0
 
 def load_json():
     with open('books.json', 'r') as json_file:
@@ -44,6 +47,7 @@ def get_number(val):
 
 
 def get_info_old(soup):
+    # total_info_old += 1
     series_h2 = soup.find("h2", {"id": "bookSeries"})
 
     series = ''
@@ -88,6 +92,18 @@ def get_info_old(soup):
     # print(series, type, genres, n_in_series)
     return series, genres, type, n_in_series
 
+def get_setting(page):
+    setting = None 
+    
+    descItem = page.select("div.WorkDetails") # div.DescListItem")
+
+    print(descItem)
+    for itm in descItem:
+        if itm.select_one("dt").text == "Setting":
+            setting = itm.select_one("dd").text
+
+    return setting
+
 def get_info(id):
     try:
         url = GOODREADS_URL + str(id)
@@ -95,11 +111,12 @@ def get_info(id):
         log('processing', url)
         url_open = urlopen(url)
         soup = BeautifulSoup(url_open, 'html.parser')
-
+        log('got soup')
         if (soup.find("h1", {"id": "bookTitle"})):
             log("OLD", url)
             return get_info_old(soup)
 
+        # total_info_new = total_info_new + 1
         log("NEW", url)
         title_div = soup.select_one("div.BookPageTitleSection__title") # > h3 > a") # > h3 > a")  # soup.find("h2", {"id": "bookSeries"})
 
@@ -136,8 +153,13 @@ def get_info(id):
         elif 'Light Novel' in genres:
             type = 'lightNovel'
 
+        # print(soup.find("div.BookDetails"))
+        # setting = get_setting(soup)
+        # print(setting)
+
+        # print(soup)
         # print(series, type, genres, n_in_series)
-        return series, genres, type, n_in_series
+        return series, genres, type, n_in_series #, setting
     except Exception as e:
         # print('!!!!!!!!!!', book['title'], book['goodreadsId'])
         # print(e)
@@ -157,16 +179,18 @@ p = {
 
 
 # books = notion.get_notion_data('BOOKS', p=p)
-books = load_json()
+# books = load_json()
+books = {'55119872': {'goodreadsId': 55119872}}
 
 new_books = {}
 
 processed = 0
 
-for b in tqdm(books):
+for b in books:
+# for b in tqdm(books):
     book = books[b]
    
-    if True: #book.get('type', "") == "":
+    if book.get('type', "") == "":
         series, genres, type, n_in_series = get_info(book['goodreadsId'])
 
         if series != None and series != '' and book.get("series","") != series: #!= None and  book["Series"] != '':
@@ -199,6 +223,7 @@ for b in tqdm(books):
 #     soup = BeautifulSoup(url_open, 'html.parser')
 
 print(len(new_books), len(books), processed)
+print('info old:', total_info_old, 'info new:', total_info_new)
 
 with open('books.json', "w") as f:
     json.dump(new_books, f, indent=4)
