@@ -10,9 +10,18 @@ import json
 from bs4 import BeautifulSoup
 import os
 import datetime
+from tqdm import tqdm 
+import utils 
 
 TRAKT_SHOWS = "https://trakt.tv/shows/{}"
-TRAKT_MOIES = "https://trakt.tv/movies/{}"
+TRAKT_MOVIES = "https://trakt.tv/movies/{}"
+TRAKT_DOMAIN = 'https://trakt.tv/'
+TRAKT_PERSON = 'https://trakt.tv/people/{}'
+TMDB_HEADSHOT = 'https://www.themoviedb.org/person/'
+IMDB = 'https://www.imdb.com/name/'
+IMDB_DOMAIN = 'https://www.imdb.com'
+TWITTER = 'https://twitter.com/'
+INSTAGRAM = 'https://www.instagram.com/'
 
 # def get_imdb_img(id):
 #     url = IMDB + str(id)
@@ -33,11 +42,24 @@ TRAKT_MOIES = "https://trakt.tv/movies/{}"
 #     result = page.select_one('div.poster a img')
 #     return result['src'].replace('"', '') if result else ''
 
+def get_trakt_headshot(id):
+    url = TRAKT_PERSON.format(id)
+
+    page_data = requests.get(url)
+    page = BeautifulSoup(page_data.content, 'html.parser')
+
+    result = page.select_one('div.poster > img.real')
+
+    if (result and result['data-original']):
+        return result['data-original']
+
+    return ''
+
 def get_trakt_banner(item):
     if (isinstance(item, TVShow)):
         url = TRAKT_SHOWS.format(item.trakt)
     else:
-        url = TRAKT_MOIES.format(item.trakt)
+        url = TRAKT_MOVIES.format(item.trakt)
 
     page_data = requests.get(url)
     page = BeautifulSoup(page_data.content, 'html.parser')
@@ -61,13 +83,14 @@ def get_network(item):
     return ''
 
 LIST_TO_STATUS = {
-    'secondary-watchlist': 'Maybe',
-    'watching-now': 'Watching',
-    'abandoned': 'Abandoned',
-    'paused': 'Paused',
-    'on-hold': 'On Hold',
-    'finished': 'Watched',
-    'actual-watchlist': 'Not started'
+    # 'secondary-watchlist': 'maybe',
+    'watching-now': 'watching',
+    'abandoned': 'abandoned',
+    'paused': 'paused',
+    'on-hold': 'onHold',
+    # 'actual-watchlist': 'notStarted',
+    # 'finished-previous': 'watched',
+    'finished': 'watched'
 }
 
 TRAKT_DOMAIN = 'https://trakt.tv/'
@@ -90,14 +113,14 @@ def get_all_trakt():
     me = User(username)
     # print(me.lists)
 
-    things = []
+    things = {}
 
     for l in LIST_TO_STATUS.keys():
-        # print('-'*5, l.ljust(12), '-'*5)
+        print('-'*5, l.ljust(12), '-'*5)
         list = me.get_list(l) 
         # print("ITEMS: ", len(list._items))
         # pprint(list._items[0])
-        for item in list._items:
+        for item in tqdm(list._items):
 
         # for watched_shows and watched_movies
         # some attributes are not present (bug on PyTrakt?), so have to comment them below
@@ -113,13 +136,13 @@ def get_all_trakt():
             #     continue
 
             if isinstance(item, Movie):
-                thing['Type'] = 'Movie'
-                thing['Premiered'] = item.released
+                thing['type'] = 'Movie'
+                thing['premiered'] = item.released
 
             elif isinstance(item, TVShow):
-                thing['Type'] = 'TV'
-                thing['Premiered'] = item.first_aired.strftime('%Y-%m-%d') if item.first_aired else None
-                thing['Show Status'] = item.status
+                thing['type'] = 'TV'
+                thing['premiered'] = item.first_aired.strftime('%Y-%m-%d') if item.first_aired else None
+                thing['showStatus'] = item.status
                 # if l == 'watching-now':
                 
 
@@ -128,39 +151,74 @@ def get_all_trakt():
                 # pprint(item)
                 continue
 
-            thing['Trakt Id'] = item.trakt
+            thing['traktId'] = item.trakt
 
-            thing['Name'] = item.title
-            thing['Status'] = LIST_TO_STATUS[l]
+            thing['name'] = item.title
+            thing['status'] = LIST_TO_STATUS[l]
             # pprint.pprint(item)
-            thing['Country'] =  item.country
-            thing['Language'] = item.language
+            thing['country'] =  utils.country_code_to_name(item.country)
+            thing['language'] = item.language
             
-            genres = getattr(item, 'genres', [])
-            if genres:
-                thing['Genres'] = ','.join(genres)
+            thing['genres'] = getattr(item, 'genres', [])
+            # if genres:
+            #     thing['genres'] = ','.join(genres)
                 
-            thing['Summary'] = item.overview
-            thing['Runtime'] = item.runtime
-            thing['Certification'] = item.certification
+            thing['summary'] = item.overview
+            thing['runtime'] = item.runtime
+            thing['certification'] = item.certification
             # pprint.pprint(vars(item))
             # pprint.pprint(item.ext)
-            thing['Link'] = TRAKT_DOMAIN + item.ext #TRAKT_LINK.format(**item.__dict__)
+            thing['link'] = TRAKT_DOMAIN + item.ext #TRAKT_LINK.format(**item.__dict__)
             # if 'strangers-with-candy' in thing['Link']:
             #     thing['Link'].replace('strangers-with-candy','1899')
-            thing['Homepage'] = item.homepage
-            thing['Year'] = item.year
-            
-            thing['Where'] = get_network(item)
+            thing['homepage'] = item.homepage
+            thing['year'] = item.year
+            thing['where'] = get_network(item)
             
 
             # thing['Cover'] = get_trakt_banner(item)
             # print(thing['Cover'])
             
-            things.append(thing)
+            things[str(item.trakt)] = thing
 
     return things
 
+def get_trakt_actors():
+    print('version', trakt.__version__)
+    trakt.core.AUTH_METHOD = trakt.core.OAUTH_AUTH 
+
+    with open('config.json', 'r') as config_file:
+        config = json.load(config_file)
+        trakt.core.CLIENT_ID = config["CLIENT_ID"]
+        trakt.core.CLIENT_SECRET = config["CLIENT_SECRET"]
+        trakt.core.OAUTH_TOKEN = config["OAUTH_TOKEN"]
+        trakt.core.AUTH_METHOD = trakt.core.OAUTH_AUTH
+        username = config["USERNAME"]
+
+    me = User(username)
+
+    people = {}
+
+    actresses_list = me.get_list('actresses') 
+    for actor in tqdm(actresses_list._items):
+        # print(actor.name)
+        person = {}
+        
+        person['name'] = actor.name
+        person['birthday'] = actor.birthday 
+        person['country'] = utils.fix_actress_country(actor.birthplace)
+        person['profession'] = ['actor']
+        person['traktId'] = actor.trakt
+        person['link'] = TRAKT_DOMAIN + actor.ext
+        if actor.social_ids:
+            person['instagram'] = INSTAGRAM + actor.social_ids['instagram'] if actor.social_ids['instagram'] else ''
+            person['twitter'] = TWITTER + actor.social_ids['twitter'] if actor.social_ids['twitter'] else ''
+        
+        person['photo'] = get_trakt_headshot(actor.trakt)
+
+        people[str(actor.trakt)] = person
+
+    return people
 # with open('lists.json', "w") as f:
 #         json.dump(things, f, indent=4)
         

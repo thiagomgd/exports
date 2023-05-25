@@ -9,9 +9,9 @@ from urllib.request import urlopen
 import csv 
 import copy 
 from tqdm import tqdm
+import utils 
 
 GOODREADS_URL = "https://www.goodreads.com/book/show/"
-TYPE = 'BOOKS'
 
 def load_json():
     with open('books.json', 'r') as json_file:
@@ -19,43 +19,6 @@ def load_json():
 
         return books
 
-# def get_series(title):
-#     # Song of the Forever Rains (Mousai, #1)
-#     # Ember Falls (The Green Ember #2)
-#     # 文豪ストレイドッグス 8 [Bungō Stray Dogs 8]
-#     # ぼくたちは勉強ができない 7 [Bokutachi wa Benkyou ga Dekinai 7] (We Never Learn, #7)
-#     # Ranma 1/2 (2-in-1 Edition), Vol. 5: Includes Volumes 9  10
-#     # Bottom-Tier Character Tomozaki, Vol. 3 (light novel)
-#     # Occultic;Nine: Volume 2
-#     # Amagi Brilliant Park: Volume 1
-#     # House of Secrets: Clash of the Worlds (House of Secrets Series)
-
-
-#     # print(title)
-#     match = re.search('\(([^)]+)', title) #.group(1)
-    
-#     if match != None: # has something inside ()
-#         between_par = match.group(1)
-#         # print(between_par)
-        
-#         comma_pos = between_par.find(',')
-        
-#         if comma_pos > 0: # title, #number
-#             return between_par.split(',')[0]
-
-#     return None
-
-def get_cover(id):
-    url = GOODREADS_URL + str(id)
-    try:
-        url_open = urlopen(url)
-        soup = BeautifulSoup(url_open, 'html.parser')
-        tag = soup.find("img", {"id": "coverImage"})
-        cover_url = tag['src']
-        return cover_url
-    except:
-        # print("Book:", url, "found with no cover, try changing edition.")
-        return 'https://d15be2nos83ntc.cloudfront.net/images/no-cover.png'
 
 
 def gr_date(val):
@@ -93,7 +56,32 @@ def get_status(status):
     # print("get status", status, statuses[status])
     return statuses[status]
 
+def getBookType(book):
+    # if (book.get('type', None)) != None:
+    #     return book['type']
+    
+    if ('manga' in book['Bookshelves']):
+        return 'manga'
+
+    if ('light-novel' in book['Bookshelves']):
+        return 'light novel'
+    
+    if ('comics' in book['Bookshelves'] or 'graphic-novels' in book['Bookshelves']):
+        return 'comic'
+
+    # if ('non-fiction' in book['Bookshelves']):
+    #     return 'book'
+
+    if (book.get('type', None)) != None:
+        return book['type']
+    
+    return None
+        
+
 def convert_book(book):
+    
+    # if book['Book Id'] == "36568445":
+    #     print("!!!", getBookType(book), '-', book['Bookshelves'])
 
     return {
         "title": book['Title'],
@@ -113,9 +101,10 @@ def convert_book(book):
         "dateAddedGR": gr_date(book['Date Added']).isoformat()[:10] if gr_date(book['Date Added']) else None,
         "bookshelves": book['Bookshelves'],
         "status": get_status(book['Exclusive Shelf']),
-        "cover": book.get('cover',None),
+        "cover": book.get('cover', None),
         "goodreadsId": int(book['Book Id']),
-        "goodreadsLink": "https://www.goodreads.com/book/show/{}".format(book['Book Id'])
+        "goodreadsLink": "https://www.goodreads.com/book/show/{}".format(book['Book Id']),
+        "type": getBookType(book)
     }
 
 # dateAdded: {{date}}
@@ -143,10 +132,21 @@ def update_record(json_data, gr_data):
 
     new_data['status'] = gr_data['status']
     new_data['rating'] = gr_data['rating']
-    new_data['dateRead'] = gr_data['dateRead']
+    new_data['bookshelves'] = gr_data['bookshelves']
 
-    if new_data.get('cover', None) == None or new_data['cover'] == 'https://d15be2nos83ntc.cloudfront.net/images/no-cover.png':
-        new_data['cover'] = get_cover(new_data['goodreadsId'])
+    if (gr_data.get('dateRead', None) != None):
+        new_data['dateRead'] = gr_data['dateRead']
+        new_data['yearRead'] = int(gr_data['dateRead'][:4])
+    elif (new_data.get('yearRead', None) == None and new_data.get('dateRead', None) != None):
+        new_data['yearRead'] = int(new_data['dateRead'][:4])
+
+    if (gr_data['type'] != None):
+        new_data['type'] = gr_data['type']
+
+    # print('cover', new_data['cover'], new_data['cover'].endswith('images/no-cover.png'))
+    # new books will have no cover anyway, no need to check for other tags
+    if new_data.get('cover', None) == None or new_data['cover'].endswith('images/no-cover.png'):
+        new_data = utils.updateInfo(new_data)
 
     return new_data
 
@@ -183,6 +183,7 @@ new = 0
 updated = 0
 new_dict = {}
 
+# for book_id in books_gr:
 for book_id in tqdm(books_gr):
     b_gr = books_gr[book_id]
     # print(book_id)
@@ -206,4 +207,8 @@ for book_id in tqdm(books_gr):
 print(len(new_dict), len(books_json), len(books_gr), new, updated)
 
 with open('books.json', "w") as f:
+    json.dump(new_dict, f, indent=4)
+
+MAIN_DIR = '/Users/thiago/git/geekosaurblog/src/_cache/'
+with open(MAIN_DIR+'goodreads.json', "w") as f:
     json.dump(new_dict, f, indent=4)

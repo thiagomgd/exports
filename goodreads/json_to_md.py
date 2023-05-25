@@ -31,28 +31,32 @@ def load_md():
 
     for root, dirs, files in os.walk(MAIN_DIR, topdown=False):
         for name in files:
-            file_path = os.path.join(root, name)
-            if file_path.endswith('.DS_Store') or file_path.startswith('{}/Inbox/'.format(MAIN_DIR)):
-                continue
+            try:
+                file_path = os.path.join(root, name)
+                if file_path.endswith('.DS_Store') or file_path.startswith('{}/Inbox/'.format(MAIN_DIR)):
+                    continue
 
-            # print(file_path)
-            data = frontmatter.load(file_path)
-            # print('\n\n\n------\n')
-            # pprint(data.metadata)
-            # pprint(data.content)
+                # print(file_path)
+                data = frontmatter.load(file_path)
+                # print('\n\n\n------\n')
+                # pprint(data.metadata)
+                # pprint(data.content)
 
-            book_data[str(data.metadata['goodreadsId'])] = data
-            book_files[str(data.metadata['goodreadsId'])] = file_path
-            # break
-            # with open(file_path, 'r') as f:
-            #     data = yaml.load_all(f)
-            #     for itm in data:
-            #         pprint(itm)
-            #     break
-            # stuff
-        # for name in dirs:
-        #     print(os.path.join(root, name))
-            # stuff
+                book_data[str(data.metadata['goodreadsId'])] = data
+                book_files[str(data.metadata['goodreadsId'])] = file_path
+                # break
+                # with open(file_path, 'r') as f:
+                #     data = yaml.load_all(f)
+                #     for itm in data:
+                #         pprint(itm)
+                #     break
+                # stuff
+            # for name in dirs:
+            #     print(os.path.join(root, name))
+                # stuff
+            except:
+                print("EXCEPT: ", file_path)
+                raise Exception("stop")
 
     return book_data, book_files
 
@@ -174,7 +178,7 @@ def should_skip(book):
         # print('No type', book['title'], book['status'])
         return True
 
-    if book.get('type', '') not in ['book', 'lightNovel']:
+    if book.get('type', '') not in ['book', 'light novel']:
         # print("Type: ", book['type'])
         return True
 
@@ -232,16 +236,23 @@ def get_folder(book):
 
 
 json_books = load_json()
+# json_books = {
+#     "60784841": json_books_["60784841"]
+# }
 
 md_books, md_files = load_md()
 print( len(md_books), len(md_files))
+
+updated_files = []
+
 for bookId in json_books:
     # print(bookId)
     book = json_books[bookId]
     
-
+    # print('!!!')
     if should_skip(book):
         continue
+    # print('didnt skip')
 
     # pprint(book)
 
@@ -256,6 +267,10 @@ for bookId in json_books:
                 yaml.dump(new_data, fh)
                 fh.write('---\n')
                 fh.write(md_books[bookId].content)
+
+            updated_files.append(md_files[bookId])
+        
+        del md_files[bookId]
     else:
         # TODO: Check if it's changed edition 
         #     if there's a file already, it's same book
@@ -266,7 +281,10 @@ for bookId in json_books:
         folder = get_folder(book)
 
         # print("Saving: ", folder, filename)
-        with open("mds/{}{}.md".format(folder, filename), 'w') as fh:
+    #     if not os.path.exists(directory):
+    # # If it doesn't exist, create it
+    # os.makedirs(directory)
+        with open("{}/{}{}.md".format(MAIN_DIR, folder, filename), 'w') as fh:
             fh.write('---\n')
             yaml.dump(frontmatter, fh)
             fh.write('---\n')
@@ -275,6 +293,7 @@ for bookId in json_books:
 
 #     # break
 
+print("updated files:", len(updated_files))
 print("Changed status:", CHANGED_STATUS)
-print("Unvisited files:", md_files)
+print("Unvisited files:", len(md_files), md_files)
 
