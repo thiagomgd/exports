@@ -13,14 +13,16 @@ from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
+from datetime import date
+
 import traceback
 # load_dotenv()
 
 
-class TwitterBookmarkDownloader(object):
+class TwitterTweetDeleter(object):
     def __init__(self, username=None, password=None, download_dir=None, headless=True, browser=None):
         self.LOGIN_URL = "https://twitter.com/login"
-        self.BOOKMARK_URL = "https://twitter.com/i/bookmarks"
+        self.PROFILE_URL = "https://twitter.com/{}/media".format(username)
         self.username = username
         self.password = password
         self.download_dir = download_dir
@@ -95,29 +97,7 @@ class TwitterBookmarkDownloader(object):
             else:
                 authenticated = True
 
-    def get_bookmarks(self):
-        self.browser.get(self.BOOKMARK_URL)
-        time.sleep(1)
-
-        time.sleep(1)
-        images = self.browser.find_elements(By.TAG_NAME, "img")
-        urls = [img.get_attribute("src") for img in images]
-
-        if not os.path.isdir(self.download_dir):
-            os.mkdir(self.download_dir)
-
-        for url in urls:
-            if "media" in url:
-                # driver.get(url)
-                filename, format_ = os.path.split(url)[1].split("?")
-                ext = re.findall("format=\w{3}", format_)[0].split("=")[1]
-                img_data = urlopen(url).read()
-                path = Path(self.download_dir, f"{filename}.{ext}")
-                with open(path, "wb") as f:
-                    f.write(img_data)
-                print(f"Downloaded file to: {path}")
-
-    def save_delete_bookmark(self, tweets_csv):
+    def save_delete_tweets(self, tweets_csv):
     #   tweet = self.browser.find_element_by_xpath("//*[@id='react-root']/div/div/div[2]/main/div/div/div/div[1]/div/div[2]/div/section/div/div/div")
         tweet = self.browser.find_element(By.CSS_SELECTOR, 'article[data-testid="tweet"]')
         # for tweet in tweets:
@@ -128,7 +108,30 @@ class TwitterBookmarkDownloader(object):
         # profile = tweet_profile.text[1:]
         tweet_id = tweet_url.split('/')[-1]
         profile = tweet_url.split('/')[-3]
+
+        # tweetText = tweet.find_element(By.CSS_SELECTOR, "div[data-testid='tweetText']")
+        # tweetReply = tweet.find_element(By.CSS_SELECTOR, "div[data-testid='reply']")
+        # self.browser.actions().scroll(0, 0, 0, 0, caret).perform()
+        # self.browser.execute_script('arguments[0].scrollIntoView({block: "center"})', tweetText)
+        time.sleep(1)
+
+        if profile == self.username:
+            # own tweet/quote tweet, delete
+            caret = tweet.find_element(By.CSS_SELECTOR, "div[data-testid='caret']")
+            self.browser.execute_script('arguments[0].scrollIntoView({block: "center"})', caret)
+            time.sleep(1)
+            caret.click()
+
+            dropdown = self.browser.find_element(By.CSS_SELECTOR, "div[data-testid='Dropdown']")
+
+            dropdown.find_element(By.XPATH, '//*[@id="layers"]/div[2]/div/div/div/div[2]/div/div[3]/div/div/div/div[1]').click()
+            time.sleep(1)
+            self.browser.find_element(By.CSS_SELECTOR, "div[data-testid='confirmationSheetConfirm']").click()
+            
+            return
         
+        # retweet, undo
+                
         print(tweet_url, profile)
         # print(profile)
 
@@ -137,19 +140,6 @@ class TwitterBookmarkDownloader(object):
         # pprint(img_urls)
 
         has_images = False
-        # DOWNLOAD IMAGES
-        for url in img_urls:
-            if "media" in url:
-                has_images = True
-                # driver.get(url)
-                filename, format_ = os.path.split(url)[1].split("?")
-                fn = "{}_{}_{}".format(profile, tweet_id, filename)
-                ext = re.findall("format=\w{3}", format_)[0].split("=")[1]
-                img_data = urlopen(url).read()
-                path = Path(self.download_dir, f"{fn}.{ext}")
-                with open(path, "wb") as f:
-                    f.write(img_data)
-                print(f"Downloaded file to: {path}")
 
         # check if is video, link
         video = tweet.find_elements(By.CSS_SELECTOR, "div[aria-label='Embedded video']")
@@ -166,21 +156,25 @@ class TwitterBookmarkDownloader(object):
         elif has_images:
             tweet_type = "imageTweet"
       
-        print('appending:',tweet_url, profile, tweet_type)
+        print('appending:', tweet_url, profile, tweet_type)
         # url,folder,tags
-        tweets_csv.write('{},{},"Twitter: {},{}"\n'.format(tweet_url, 'Tweets', profile, tweet_type))
+        tweets_csv.write('{},{},retweet,"Twitter: {},{}"\n'.format(tweet_url, 'ReTweets', profile, tweet_type))
 
-        # click share
-        tweet.find_element(By.CSS_SELECTOR, "div[aria-label='Share post'][role='button']").click()
+        # click retweet
+        unretweet = tweet.find_element(By.CSS_SELECTOR, "div[data-testid='unretweet']")
+        self.browser.execute_script('arguments[0].scrollIntoView({block: "center"})', unretweet)
+        time.sleep(1)
+        unretweet.click()
         # tweet.find_element_by_xpath('//*[@id="react-root"]/div/div/div[2]/main/div/div/div/div[1]/div/div[2]/div/section/div/div/div[1]/div/div/article/div/div/div/div[2]/div[2]/div[2]/div[3]/div[4]/div').click()
         time.sleep(1)
 
-        # remove bookmark
+        # remove bookmark 
         # pprint(tweet.find_element_by_css_selector("div[data-testid='Dropdown']"))
-        dropdown = tweet.find_element(By.XPATH, '//*[@id="layers"]/div[2]/div/div/div/div[2]/div/div[3]/div/div/div')
+        dropdown = self.browser.find_element(By.CSS_SELECTOR, "div[data-testid='Dropdown']")
         # pprint(dropdown)
         # pprint(dropdown.find_elements_by_css_selector("div[role='menuitem']")[-1])
-        dropdown.find_elements(By.CSS_SELECTOR, "div[role='menuitem']")[-1].click()
+        # dropdown.find_elements(By.CSS_SELECTOR, "div[role='menuitem']")[-1].click()
+        dropdown.find_element(By.CSS_SELECTOR, "div[data-testid='unretweetConfirm']").click()
 
         time.sleep(2)
 
@@ -215,12 +209,13 @@ class TwitterBookmarkDownloader(object):
         self.browser.execute_script("window.scrollTo(0,0)")
         time.sleep(1)
 
-    def save_and_delete_bookmarks(self):
-        with open("{}_tweets.csv".format(self.username), "a") as tweets_csv:
-            self.browser.get(self.BOOKMARK_URL)
+    def save_and_delete_tweets(self):
+        current_date = date.today()
+        with open("{}_deleted_retweets_{}.csv".format(self.username, current_date), "a") as tweets_csv:
+            self.browser.get(self.PROFILE_URL)
             time.sleep(3)
 
-            force_load = True
+            # force_load = False
 
             # while force_load:
             #     self.scroll_up_and_down(20)
@@ -234,13 +229,10 @@ class TwitterBookmarkDownloader(object):
 
                 try:
                     for _ in range(100):
-                        self.save_delete_bookmark(tweets_csv)
+                        self.save_delete_tweets(tweets_csv)
                         time.sleep(2)
                 except Exception:
                     traceback.print_exc()
-                    self.small_scroll()
-
-                    # self.browser.refresh()
-                    # time.sleep(4)
-
-
+                    self.browser.execute_script("window.scrollTo(0,0)")
+                    # self.browser.execute_script("window.scrollTo(0,700)")
+                    # self.small_scroll()

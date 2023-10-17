@@ -13,14 +13,16 @@ from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
+from datetime import date
+
 import traceback
 # load_dotenv()
 
 
-class TwitterBookmarkDownloader(object):
+class TwitterTweetUnliker(object):
     def __init__(self, username=None, password=None, download_dir=None, headless=True, browser=None):
         self.LOGIN_URL = "https://twitter.com/login"
-        self.BOOKMARK_URL = "https://twitter.com/i/bookmarks"
+        self.PROFILE_URL = "https://twitter.com/{}/likes".format(username)
         self.username = username
         self.password = password
         self.download_dir = download_dir
@@ -95,92 +97,21 @@ class TwitterBookmarkDownloader(object):
             else:
                 authenticated = True
 
-    def get_bookmarks(self):
-        self.browser.get(self.BOOKMARK_URL)
-        time.sleep(1)
-
-        time.sleep(1)
-        images = self.browser.find_elements(By.TAG_NAME, "img")
-        urls = [img.get_attribute("src") for img in images]
-
-        if not os.path.isdir(self.download_dir):
-            os.mkdir(self.download_dir)
-
-        for url in urls:
-            if "media" in url:
-                # driver.get(url)
-                filename, format_ = os.path.split(url)[1].split("?")
-                ext = re.findall("format=\w{3}", format_)[0].split("=")[1]
-                img_data = urlopen(url).read()
-                path = Path(self.download_dir, f"{filename}.{ext}")
-                with open(path, "wb") as f:
-                    f.write(img_data)
-                print(f"Downloaded file to: {path}")
-
-    def save_delete_bookmark(self, tweets_csv):
+    def unlike_tweets(self):
     #   tweet = self.browser.find_element_by_xpath("//*[@id='react-root']/div/div/div[2]/main/div/div/div/div[1]/div/div[2]/div/section/div/div/div")
-        tweet = self.browser.find_element(By.CSS_SELECTOR, 'article[data-testid="tweet"]')
+        # tweets = self.browser.find_elements(By.CSS_SELECTOR, 'article[data-testid="tweet"]')
+        unlikes = self.browser.find_elements(By.CSS_SELECTOR, 'div[data-testid="unlike"]')
+        print(len(unlikes))
         # for tweet in tweets:
-        tweet_link = tweet.find_element(By.CSS_SELECTOR, 'a[role="link"][dir="auto"],a[role="link"][dir="ltr"]')
-        tweet_url = tweet_link.get_attribute("href")
-
-        # tweet_profile = tweet.find_element_by_xpath('div/div/article/div/div/div/div[2]/div[2]/div[1]/div/div[1]/div[1]/div[1]/a/div/div[2]/div/span')
-        # profile = tweet_profile.text[1:]
-        tweet_id = tweet_url.split('/')[-1]
-        profile = tweet_url.split('/')[-3]
-        
-        print(tweet_url, profile)
-        # print(profile)
-
-        images = tweet.find_elements(By.TAG_NAME,"img")
-        img_urls = [img.get_attribute("src") for img in images]
-        # pprint(img_urls)
-
-        has_images = False
-        # DOWNLOAD IMAGES
-        for url in img_urls:
-            if "media" in url:
-                has_images = True
-                # driver.get(url)
-                filename, format_ = os.path.split(url)[1].split("?")
-                fn = "{}_{}_{}".format(profile, tweet_id, filename)
-                ext = re.findall("format=\w{3}", format_)[0].split("=")[1]
-                img_data = urlopen(url).read()
-                path = Path(self.download_dir, f"{fn}.{ext}")
-                with open(path, "wb") as f:
-                    f.write(img_data)
-                print(f"Downloaded file to: {path}")
-
-        # check if is video, link
-        video = tweet.find_elements(By.CSS_SELECTOR, "div[aria-label='Embedded video']")
-        has_video = len(video) > 0 
-
-        link_element = tweet.find_elements(By.CSS_SELECTOR, "div[data-testid='card.wrapper']")
-        has_link = len(link_element) > 0
-
-        tweet_type = "textTweet"
-        if has_link:
-            tweet_type = "linkTweet"
-        elif has_video:
-            tweet_type = "videoTweet"
-        elif has_images:
-            tweet_type = "imageTweet"
-      
-        print('appending:',tweet_url, profile, tweet_type)
-        # url,folder,tags
-        tweets_csv.write('{},{},"Twitter: {},{}"\n'.format(tweet_url, 'Tweets', profile, tweet_type))
-
-        # click share
-        tweet.find_element(By.CSS_SELECTOR, "div[aria-label='Share post'][role='button']").click()
-        # tweet.find_element_by_xpath('//*[@id="react-root"]/div/div/div[2]/main/div/div/div/div[1]/div/div[2]/div/section/div/div/div[1]/div/div/article/div/div/div/div[2]/div[2]/div[2]/div[3]/div[4]/div').click()
         time.sleep(1)
 
-        # remove bookmark
-        # pprint(tweet.find_element_by_css_selector("div[data-testid='Dropdown']"))
-        dropdown = tweet.find_element(By.XPATH, '//*[@id="layers"]/div[2]/div/div/div/div[2]/div/div[3]/div/div/div')
-        # pprint(dropdown)
-        # pprint(dropdown.find_elements_by_css_selector("div[role='menuitem']")[-1])
-        dropdown.find_elements(By.CSS_SELECTOR, "div[role='menuitem']")[-1].click()
+        for unlike in unlikes:
+            # unlike = tweet.find_element(By.CSS_SELECTOR, 'div[data-testid="unlike"]')
+            self.browser.execute_script('arguments[0].scrollIntoView({block: "center"})', unlike)
+            time.sleep(1)
+            unlike.click()
+
+            time.sleep(2)
 
         time.sleep(2)
 
@@ -215,32 +146,28 @@ class TwitterBookmarkDownloader(object):
         self.browser.execute_script("window.scrollTo(0,0)")
         time.sleep(1)
 
-    def save_and_delete_bookmarks(self):
-        with open("{}_tweets.csv".format(self.username), "a") as tweets_csv:
-            self.browser.get(self.BOOKMARK_URL)
+    def unlike(self):
+        
+
+        # force_load = False
+
+        # while force_load:
+        #     self.scroll_up_and_down(20)
+            
+        #     keep_going = input('Continue trying? y/n ')
+        #     force_load = keep_going == 'y'
+
+
+        for itr in range(15):
+            print("ITR: {}".format(itr))
+            self.browser.get(self.PROFILE_URL)
             time.sleep(3)
-
-            force_load = True
-
-            # while force_load:
-            #     self.scroll_up_and_down(20)
-                
-            #     keep_going = input('Continue trying? y/n ')
-            #     force_load = keep_going == 'y'
-
-
-            for itr in range(15):
-                print("ITR: {}".format(itr))
-
-                try:
-                    for _ in range(100):
-                        self.save_delete_bookmark(tweets_csv)
-                        time.sleep(2)
-                except Exception:
-                    traceback.print_exc()
-                    self.small_scroll()
-
-                    # self.browser.refresh()
-                    # time.sleep(4)
-
-
+            try:
+                for _ in range(100):
+                    self.unlike_tweets()
+                    time.sleep(2)
+            except Exception:
+                traceback.print_exc()
+                # self.browser.execute_script("window.scrollTo(0,0)")
+                # self.browser.execute_script("window.scrollTo(0,700)")
+                self.small_scroll()

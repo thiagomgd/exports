@@ -10,6 +10,7 @@ import json
 from bs4 import BeautifulSoup
 import os
 import datetime
+import time
 from tqdm import tqdm 
 import utils 
 
@@ -83,14 +84,26 @@ def get_network(item):
     return ''
 
 LIST_TO_STATUS = {
-    # 'secondary-watchlist': 'maybe',
-    'watching-now': 'watching',
-    'abandoned': 'abandoned',
-    'paused': 'paused',
-    'on-hold': 'onHold',
+    # # 'secondary-watchlist': 'maybe',
+    # # 'actual-watchlist': 'watchil'
+    # 'watching-now': 'watching',
+    # 'abandoned': 'abandoned',
+    # 'on-hold': 'onHold',
     # 'actual-watchlist': 'notStarted',
-    # 'finished-previous': 'watched',
-    'finished': 'watched'
+    # # 'finished-previous': 'watched',
+    # 'finished': 'watched'
+
+
+    'old-stuff': 'old-stuff',
+    'brazilian': 'brazilian',
+    'memories': 'memories',
+    'on-hold': 'on-hold',
+    'abandoned': 'abandoned',
+    'rewatch': 'rewatch',
+    'b-trashy': 'b-trashy',
+    'finished': 'finished',
+    'r': 'r'
+    # 'recommendations-copy': 'favorites'
 }
 
 TRAKT_DOMAIN = 'https://trakt.tv/'
@@ -147,11 +160,13 @@ def get_all_trakt():
                 
 
             else:
-                print('SKIPPED:', item.title)
+                print('SKIPPED:', item)
                 # pprint(item)
                 continue
 
             thing['traktId'] = item.trakt
+            thing['tmdbId'] = item.tmdb
+            
 
             thing['name'] = item.title
             thing['status'] = LIST_TO_STATUS[l]
@@ -209,6 +224,7 @@ def get_trakt_actors():
         person['country'] = utils.fix_actress_country(actor.birthplace)
         person['profession'] = ['actor']
         person['traktId'] = actor.trakt
+        person['tmdbId'] = actor.tmdb
         person['link'] = TRAKT_DOMAIN + actor.ext
         if actor.social_ids:
             person['instagram'] = INSTAGRAM + actor.social_ids['instagram'] if actor.social_ids['instagram'] else ''
