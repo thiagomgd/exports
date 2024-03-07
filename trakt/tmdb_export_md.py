@@ -110,40 +110,44 @@ for actorId in json_actors:
     filename = actor["name"] # get_filename(actor['name'])
     folder = "" # get_folder(book)
 
-    with open("{}/{}{}.md".format(ACTORS_MAIN_DIR, folder, filename), 'w') as fh:
+    fname = "{}/{}{}.md".format(ACTORS_MAIN_DIR, folder, filename)
+    if os.path.exists(fname):
+        continue
+
+    with open(fname, 'w') as fh:
         fh.write('---\n')
         yaml.dump(frontmatter, fh)
         fh.write('---\n')
         extra_data = get_actor_extra(actor)
         fh.write(extra_data)
 
-print('Exporting media')
-for mediaId in json_media:
-    # print(actorId)
-    media = json_media[mediaId]
+# print('Exporting media')
+# for mediaId in json_media:
+#     # print(actorId)
+#     media = json_media[mediaId]
 
-    # if mediaId in media_data:
-    #     # print('exists')
-    #     pass
-    # else:
-    frontmatter = set_media_frontmatter(media)
-    filename = utils.format_media_title(media)
-    folder = MOVIES_MAIN_DIR if media['type'] == "Movie" else TV_MAIN_DIR
-    year = media.get('year')
-    decade = 'noYear' if year == None else str(year)[:-1] + '0s'
+#     # if mediaId in media_data:
+#     #     # print('exists')
+#     #     pass
+#     # else:
+#     frontmatter = set_media_frontmatter(media)
+#     filename = utils.format_media_title(media)
+#     folder = MOVIES_MAIN_DIR if media['type'] == "Movie" else TV_MAIN_DIR
+#     year = media.get('year')
+#     decade = 'noYear' if year == None else str(year)[:-1] + '0s'
 
-    filePath = "{}/{}".format(folder, decade)
-    if not os.path.exists(filePath):
-        os.makedirs(filePath)
+#     filePath = "{}/{}".format(folder, decade)
+#     if not os.path.exists(filePath):
+#         os.makedirs(filePath)
 
-    print("{}/{}.md".format(filePath, filename))
+#     print("{}/{}.md".format(filePath, filename))
 
-    with open("{}/{}.md".format(filePath, filename), 'w') as fh:
-        fh.write('---\n')
-        yaml.dump(frontmatter, fh)
-        fh.write('---\n')
-        extra_data = get_media_extra(media)
-        fh.write(extra_data)
+#     with open("{}/{}.md".format(filePath, filename), 'w') as fh:
+#         fh.write('---\n')
+#         yaml.dump(frontmatter, fh)
+#         fh.write('---\n')
+#         extra_data = get_media_extra(media)
+#         fh.write(extra_data)
 
 # print("updated files:", len(updated_files))
 # print("Changed status:", CHANGED_STATUS)
